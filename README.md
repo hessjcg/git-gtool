@@ -1,16 +1,29 @@
-# Project Title
-
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=GITHUB_URL)
+# Git CLI Tools for Googlers
 
 *Description*
 
-> **🧪 Preview:** Any notes about stability or launch stage.
+This project enables yo
 
 ## Features
 
+### Automatically merge renovate all open PRs from renovate bot.
+
+```
+$ git gtool merge-renovate-prs
+```
+
+This will one-by-one merge any PRs opened by the Renovate Bot, until they are all
+closed.
+
 ## Getting Started
 
+1. Clone this repository
+2. Run `go build -o 'git-gtool' main.go`
+3. Put `git-gtool` into your path, for example: `cp git-gtool $HOME/bin/`
+
 ### Prerequisites
+1. Install [Github CLI](https://cli.github.com/manual/installation)
+2. Log in using the Github CLI
 
 ## Contributing
 
