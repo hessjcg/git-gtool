@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/hessjcg/git-gtool/internal/gitrepo"
+	"github.com/hessjcg/git-gtool/internal/renovatepr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -20,6 +23,23 @@ var (
 			log.Printf("The github issue notifier")
 		},
 	}
+
+	renovatePrs = &cobra.Command{
+		Use:   "merge-renovate-prs",
+		Short: "Merges open prs from RenovateBot.",
+		Long: "This will run for several minutes until all PRs are merged.\n" +
+			"It iterates over open renovate PRs and attempts to merge them\n" +
+			"one by one.",
+		Run: func(cmd *cobra.Command, args []string) {
+			var cwd, _ = os.Getwd()
+			ctx := context.Background()
+			repo, err := gitrepo.OpenGit(ctx, cwd)
+			if err != nil {
+				log.Fatalf("Unable to open github client: %v", err)
+			}
+			err = renovatepr.MergePRs(ctx, repo)
+		},
+	}
 )
 
 func init() {
@@ -30,6 +50,8 @@ func init() {
 	rootCmd.PersistentFlags().Bool("viper", true, "use Viper for configuration")
 	viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
 	viper.BindPFlag("useViper", rootCmd.PersistentFlags().Lookup("viper"))
+
+	rootCmd.AddCommand(renovatePrs)
 }
 
 func initConfig() {
