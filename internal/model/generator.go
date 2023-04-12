@@ -1,52 +1,10 @@
 package model
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/google/go-github/v51/github"
 )
-
-type CachedDataSet[Data any] struct {
-	FileName string
-	Retrieve func() (*Data, error)
-	d        *Data
-	err      error
-}
-
-func (c *CachedDataSet[Data]) Get() (*Data, error) {
-	if c.d != nil || c.err != nil {
-		return c.d, c.err
-	}
-
-	if _, err := os.Stat(c.FileName); err == nil {
-		f, err := os.Open(c.FileName)
-		if err != nil {
-			return nil, err
-		}
-		c.d = new(Data)
-		err = json.NewDecoder(f).Decode(c.d)
-		if err != nil {
-			return c.d, err
-		}
-
-		return c.d, nil
-	}
-
-	c.d, c.err = c.Retrieve()
-	f, err := os.Create(c.FileName)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.NewEncoder(f).Encode(c.d)
-	if err != nil {
-		return c.d, err
-	}
-
-	return c.d, nil
-}
 
 var EndOfList = fmt.Errorf("EndOfList")
 

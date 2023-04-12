@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"regexp"
+	"strings"
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -125,4 +127,14 @@ func GitExecutablePath(cwd string) (string, error) {
 		}
 	}
 	return gitexec, nil
+}
+
+func Run(wd string, cmd string, args ...string) (string, error) {
+	c := exec.Command(cmd, args...)
+	c.Dir = wd
+	out, err := c.CombinedOutput()
+	if err != nil {
+		return string(out), err
+	}
+	return strings.Trim(string(out), "\n "), nil
 }
