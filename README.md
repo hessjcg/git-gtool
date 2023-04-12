@@ -2,7 +2,8 @@
 
 *Description*
 
-This project enables yo
+This project provides convenient tools to help Googlers work with their
+github repos. 
 
 ## Features
 

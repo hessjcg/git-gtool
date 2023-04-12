@@ -18,7 +18,7 @@ var (
 
 	rootCmd = &cobra.Command{
 		Use:   "git-gtool",
-		Short: "Runs tools on the github API",
+		Short: "Runs tools on local git repos to help with git and github admin.",
 		Run: func(cmd *cobra.Command, args []string) {
 			log.Printf("The github issue notifier")
 		},
@@ -26,7 +26,10 @@ var (
 
 	renovatePrs = &cobra.Command{
 		Use:   "merge-renovate-prs",
-		Short: "Merges open prs from RenovateBot. This will run for several minutes until all PRs are merged",
+		Short: "Merges open prs from RenovateBot.",
+		Long: "This will run for several minutes until all PRs are merged.\n" +
+			"It iterates over open renovate PRs and attempts to merge them\n" +
+			"one by one.",
 		Run: func(cmd *cobra.Command, args []string) {
 			var cwd, _ = os.Getwd()
 			ctx := context.Background()
