@@ -51,7 +51,7 @@ func MergePRs(ctx context.Context, repo *gitrepo.GitRepo) error {
 			log.Printf("Sleeping for 2 minutes before trying again...")
 			time.Sleep(2 * time.Minute)
 		} else {
-			log.Printf("Successfully merged PR. Attemptning to merge another...")
+			log.Printf("Successfully merged PR. Attempting to merge another...")
 			errCount = 0
 		}
 	}
