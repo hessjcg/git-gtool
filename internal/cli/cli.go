@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/hessjcg/git-gtool/internal/model"
+	"github.com/hessjcg/git-gtool/internal/gitrepo"
 	"github.com/hessjcg/git-gtool/internal/renovatepr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -14,10 +14,7 @@ import (
 
 var (
 	cfgFile     string
-	org         string
-	base        string
 	userLicense string
-	repos       = make([]string, 0, 10)
 
 	rootCmd = &cobra.Command{
 		Use:   "git-gtool",
@@ -33,16 +30,11 @@ var (
 		Run: func(cmd *cobra.Command, args []string) {
 			var cwd, _ = os.Getwd()
 			ctx := context.Background()
-			client, err := model.NewClient(ctx, cwd)
+			repo, err := gitrepo.OpenGit(ctx, cwd)
 			if err != nil {
-				log.Fatalf("Can't get client: %v", err)
+				log.Fatalf("Unable to open github client: %v", err)
 			}
-			for _, repo := range repos {
-				err = renovatepr.MergePrs(ctx, client, org, repo, base)
-				if err != nil {
-					log.Fatalf("Can't merge renovate PRs for %v/%v: %v", org, repo, err)
-				}
-			}
+			err = renovatepr.MergePrs(ctx, repo)
 		},
 	}
 )
@@ -52,10 +44,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.cobra.yaml)")
-	rootCmd.PersistentFlags().StringVar(&org, "org", "GoogleCloudPlatform", "Github Organization")
-	rootCmd.PersistentFlags().StringVar(&base, "base", "", "Base branch for PRs")
 	rootCmd.PersistentFlags().Bool("viper", true, "use Viper for configuration")
-	rootCmd.PersistentFlags().StringArrayVar(&repos, "repo", []string{}, "List of repos to analyze.")
 	viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
 	viper.BindPFlag("useViper", rootCmd.PersistentFlags().Lookup("viper"))
 

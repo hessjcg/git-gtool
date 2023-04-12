@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v51/github"
+	"github.com/hessjcg/git-gtool/internal/gitrepo"
 	"github.com/hessjcg/git-gtool/internal/model"
 )
 
@@ -15,13 +16,13 @@ var (
 	lgtm    = "LGTM"
 )
 
-func MergePrs(ctx context.Context, client *github.Client, org, repo, base string) error {
+func MergePrs(ctx context.Context, repo *gitrepo.GitRepo) error {
 	var err error
 	var hasMore bool
 	errCount := 0
 	for i := 1; i < 100 && errCount < 10; i++ {
 		log.Printf("Merge Renovate PRs iteration %v", i)
-		hasMore, err = MergePrStep(ctx, client, org, repo, base)
+		hasMore, err = MergePrStep(ctx, repo)
 		if !hasMore {
 			log.Printf("No more work to do")
 			break
@@ -39,23 +40,17 @@ func MergePrs(ctx context.Context, client *github.Client, org, repo, base string
 	return err
 }
 
-func MergePrStep(ctx context.Context, client *github.Client, org, repo, base string) (bool, error) {
-	if base == "" {
-		r, _, err := client.Repositories.Get(ctx, org, repo)
-		if err != nil {
-			return false, err
-		}
-		base = r.GetDefaultBranch()
-	}
-	log.Printf("Listing renovate PRs for %v/%v targeting %v", org, repo, base)
+func MergePrStep(ctx context.Context, r *gitrepo.GitRepo) (bool, error) {
+
+	log.Printf("Listing renovate PRs for %v/%v targeting %v", r.Owner, r.Name, r.GithubRepo.DefaultBranch)
 
 	// list all open PRs in order
 	g := &model.ListGenerator[github.PullRequest]{
 		Retrieve: func(opts github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
-			return client.PullRequests.List(ctx, org, repo, &github.PullRequestListOptions{
+			return r.Client.PullRequests.List(ctx, r.Owner, r.Name, &github.PullRequestListOptions{
 				Sort:        "created",
 				State:       "open",
-				Base:        base,
+				Base:        r.GithubRepo.GetDefaultBranch(),
 				ListOptions: opts,
 			})
 		},
@@ -83,24 +78,24 @@ func MergePrStep(ctx context.Context, client *github.Client, org, repo, base str
 	activePr := chooseActivePr(renovatePrs)
 
 	// Approve the PR
-	err := approvePr(ctx, client, org, repo, activePr)
+	err := approvePr(ctx, r.Client, r.Owner, r.Name, activePr)
 	if err != nil {
 		return true, err
 	}
 
 	// Approve pending workflow runs
-	err = approveWorkflowRuns(ctx, client, org, repo, activePr)
+	err = approveWorkflowRuns(ctx, r.Client, r.Owner, r.Name, activePr)
 	if err != nil {
 		return true, err
 	}
 
 	// Check Statuses Pass
-	err = checkStatusChecks(ctx, client, org, repo, base, activePr)
+	err = checkStatusChecks(ctx, r.Client, r.Owner, r.Name, r.GithubRepo.GetDefaultBranch(), activePr)
 	if err != nil {
 		return true, err
 	}
 
-	return true, mergePr(ctx, client, org, repo, activePr)
+	return true, mergePr(ctx, r.Client, r.Owner, r.Name, activePr)
 }
 
 func checkStatusChecks(ctx context.Context, client *github.Client, org string, repo string, base string, activePr *github.PullRequest) error {
