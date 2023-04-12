@@ -77,20 +77,20 @@ func MergePrStep(ctx context.Context, r *gitrepo.GitRepo) (bool, error) {
 	// Use the first Mergable PR and if none found, then use the oldest PR
 	activePr := chooseActivePr(renovatePrs)
 
-	// Approve the PR
-	err := approvePr(ctx, r.Client, r.Owner, r.Name, activePr)
-	if err != nil {
-		return true, err
-	}
-
 	// Approve pending workflow runs
-	err = approveWorkflowRuns(ctx, r.Client, r.Owner, r.Name, activePr)
+	err := approveWorkflowRuns(ctx, r.Client, r.Owner, r.Name, activePr)
 	if err != nil {
 		return true, err
 	}
 
 	// Check Statuses Pass
 	err = checkStatusChecks(ctx, r.Client, r.Owner, r.Name, r.GithubRepo.GetDefaultBranch(), activePr)
+	if err != nil {
+		return true, err
+	}
+
+	// Approve the PR
+	err = approvePr(ctx, r.Client, r.Owner, r.Name, activePr)
 	if err != nil {
 		return true, err
 	}
