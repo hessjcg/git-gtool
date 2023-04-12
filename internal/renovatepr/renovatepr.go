@@ -49,7 +49,7 @@ func MergePRs(ctx context.Context, repo *gitrepo.GitRepo) error {
 // was an error during this step.
 func mergeStep(ctx context.Context, r *gitrepo.GitRepo) (bool, error) {
 
-	log.Printf("Listing renovate PRs for %v/%v targeting %v", r.Owner, r.Name, r.GithubRepo.DefaultBranch)
+	log.Printf("Listing renovate PRs for %v/%v targeting branch %v", r.Owner, r.Name, r.GithubRepo.GetDefaultBranch())
 
 	// list all open PRs in order
 	g := &model.ListGenerator[github.PullRequest]{
@@ -124,12 +124,10 @@ func checkStatusChecks(ctx context.Context, client *github.Client, org string, r
 		}
 		// Set the status check to "missing" by default
 		checkResults[context] = "missing"
-		log.Printf(" check %v required", context)
 	}
 
 	var count int
 	// Load statuses and update checkResults
-	log.Printf("Ensuring passed status for #%4d", activePr.GetNumber())
 	statuses, err := checkStatuses(ctx, client, org, repo, activePr, count)
 	if err != nil {
 		return err
@@ -225,7 +223,6 @@ func approvePr(ctx context.Context, client *github.Client, org string, repo stri
 
 // chooseActivePr returns the oldest PR that is mergeable or nil if none exists.
 func chooseActivePr(renovatePrs []*github.PullRequest) *github.PullRequest {
-	log.Printf("Found open rennovate PRs: ")
 	var activePr *github.PullRequest
 	for _, pr := range renovatePrs {
 		log.Printf("#%4d %s %s", pr.GetNumber(), pr.GetUser().GetLogin(), pr.GetTitle())
@@ -235,7 +232,11 @@ func chooseActivePr(renovatePrs []*github.PullRequest) *github.PullRequest {
 	}
 	if activePr == nil {
 		activePr = renovatePrs[0]
+		log.Println()
+		log.Printf("Attempting to merge PR:")
+		log.Printf("#%d %v", activePr.GetNumber(), activePr.GetTitle())
 	}
+
 	return activePr
 }
 
@@ -264,7 +265,6 @@ func checkStatuses(ctx context.Context, client *github.Client, org string, repo 
 		if err != nil {
 			return nil, fmt.Errorf("can't list workflows: %v/%v %v %v %v", org, repo, activePr.GetNumber(), activePr.GetTitle(), err)
 		}
-		log.Printf(" #%4d status check %v %v", activePr.GetNumber(), status.GetState(), status.GetDescription())
 		results = append(results, runResult{
 			context:    status.GetContext(),
 			conclusion: status.GetState(),
@@ -336,7 +336,6 @@ func checkCheckRuns(ctx context.Context, client *github.Client, org string, repo
 		if err != nil {
 			return nil, fmt.Errorf("can't list check runs: %v/%v %v %v %v", org, repo, activePr.GetNumber(), activePr.GetTitle(), err)
 		}
-		log.Printf(" #%4d Check run %v %v", activePr.GetNumber(), status.GetConclusion(), status.GetName())
 		conclusion := status.GetConclusion()
 		if conclusion == "" {
 			conclusion = status.GetStatus()

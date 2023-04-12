@@ -90,7 +90,7 @@ func OpenGit(ctx context.Context, cwd string) (*GitRepo, error) {
 
 	var c *github.Client
 	var r *github.Repository
-	if name != "" && owner == "" {
+	if name != "" && owner != "" {
 		c, err = model.NewClient(ctx, workdir)
 
 		r, _, err = c.Repositories.Get(ctx, owner, name)
